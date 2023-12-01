@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  airflow_postgres:
+    image: postgres:latest
+    volumes:
+      - mp_airflow_db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: airflow
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+    networks:
+      - de-task
+
+  airflow_webserver:
+    image: apache/airflow:latest
+    depends_on:
+      - airflow_postgres
+    command: >
+      bash -c "airflow db init 
+      && airflow users create 
+      --role Admin --username admin 
+      --firstname admin --lastname admin 
+      --email admin --password admin 
+      && airflow webserver"
+    ports:
+      - "8080:8080"
+    environment:
+      - LOAD_EX=n
+      - EXECUTOR=Local
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow_postgres/airflow
+      - AIRFLOW__CORE__FERNET_KEY=WOXdeu7uhTYmRAu5cDPmqG4EfpSckW22TWoZsA88kF8=
+      - AIRFLOW__CORE__DAGS_FOLDER=/usr/local/airflow/dags
+    volumes:
+      - ./dags:/usr/local/airflow/dags
+    networks:
+      - de-task
+
+  airflow_scheduler:
+    image: apache/airflow:latest
+    depends_on:
+      - airflow_webserver
+    command: >
+      bash -c "airflow db init && airflow scheduler"
+    environment:
+      - LOAD_EX=n
+      - EXECUTOR=Local
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow_postgres/airflow
+      - AIRFLOW__CORE__FERNET_KEY=WOXdeu7uhTYmRAu5cDPmqG4EfpSckW22TWoZsA88kF8=
+      - AIRFLOW__CORE__DAGS_FOLDER=/usr/local/airflow/dags
+    volumes:
+      - ./dags:/usr/local/airflow/dags
+    networks:
+      - de-task
+
+networks:
+  de-task:
+    external: true
+
+volumes:
+  mp_airflow_db:

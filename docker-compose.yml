@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    restart: always
+    command: sh -c "alembic upgrade heads && uvicorn main:app --host 0.0.0.0"
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/server
+    depends_on:
+      - db
+    networks:
+      - de-task
+
+  db:
+    image: postgres:16.0
+    restart: always
+    ports:
+      - "5433:5432"
+    volumes:
+      - mp_db:/var/lib/postgresql/data
+    env_file:
+      - .env.postgres
+    networks:
+      - de-task
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      - de-task
+
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka:9092,OUTSIDE://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:9092,OUTSIDE://0.0.0.0:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_CREATE_TOPICS: "products:1:1"
+    networks:
+      - de-task
+
+networks:
+  de-task:
+    external: true
+
+volumes:
+  mp_db:

@@ -1,0 +1,22 @@
+# Написать SQL запрос, который выведет ТОП-5 товаров
+# с минимальным значением в поле position
+SELECT sp.id, sp.name, sp.brand, position
+FROM sr_product_log
+JOIN public.sr_product sp ON sp.local_id = sr_product_log.product_id
+ORDER BY position
+LIMIT 5
+
+
+# Написать SQL запрос, который подсчитает количество товаров
+# в каждом бренде.
+SELECT pr.brand, COUNT(*)
+FROM sr_product pr
+GROUP BY brand
+
+
+# Написать SQL запрос, который подсчитает среднюю стоимость
+# по всем существующим товарам в базе данных.
+# Ориентироваться на поле salePriceU.
+SELECT AVG("salePriceU")
+FROM sr_product pr
+
